@@ -22,6 +22,27 @@ func main() {
 
 	summary, freeSlots := buildMeetingSummary(meetingID, title, participantCount, maxParticipants)
 	fmt.Printf("summary=%q, freeSlots=%d\n", summary, freeSlots)
+
+	if freeSlots > 0 {
+		fmt.Println("registration is open")
+	} else {
+		fmt.Println("meeting is full")
+	}
+
+	var availability string
+	switch {
+	case freeSlots <= 0:
+		availability = "full"
+	case freeSlots <= 5:
+		availability = "almost full"
+	default:
+		availability = "available"
+	}
+	fmt.Println(availability)
+
+	for i := 0; i < participantCount; i++ {
+		fmt.Printf("participant #%d\n", i+1)
+	}
 }
 
 func buildMeetingSummary(meetingID MeetingID, title string, participantCount int, maxParticipants int) (string, int) {
