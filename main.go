@@ -19,4 +19,11 @@ func main() {
 
 	rawID := string(meetingID)
 	fmt.Println(rawID)
+
+	summary, freeSlots := buildMeetingSummary(meetingID, title, participantCount, maxParticipants)
+	fmt.Printf("summary=%q, freeSlots=%d\n", summary, freeSlots)
+}
+
+func buildMeetingSummary(meetingID MeetingID, title string, participantCount int, maxParticipants int) (string, int) {
+	return string(meetingID) + ": " + title, maxParticipants - participantCount
 }
