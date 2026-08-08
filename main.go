@@ -6,10 +6,12 @@ type MeetingID string
 
 func main() {
 	var title string = "Go Basics Meetup"
-	participantCount := 3
 	var isPublished bool
 	const maxParticipants int = 50
 	var meetingID MeetingID = "meetup-001"
+	participants := []string{"Alice", "Bob", "Charlie"}
+	participants = append(participants, "David")
+	participantCount := len(participants)
 
 	fmt.Printf("title=%q, type=%T\n", title, title)
 	fmt.Printf("participantCount=%d, type=%T\n", participantCount, participantCount)
@@ -40,9 +42,18 @@ func main() {
 	}
 	fmt.Println(availability)
 
-	for i := 0; i < participantCount; i++ {
-		fmt.Printf("participant #%d\n", i+1)
+	participantsMap := map[MeetingID][]string{meetingID: participants}
+	meetingParticipants, ok := participantsMap[meetingID]
+
+	if ok {
+		for index, participant := range meetingParticipants {
+			fmt.Printf("participant #%d %s\n", index+1, participant)
+		}
+		fmt.Printf("participants=%v, found=%t\n", meetingParticipants, ok)
 	}
+
+	missingParticipants, found := participantsMap[MeetingID("meetup-999")]
+	fmt.Printf("participants=%v, found=%t\n", missingParticipants, found)
 }
 
 func buildMeetingSummary(meetingID MeetingID, title string, participantCount int, maxParticipants int) (string, int) {
