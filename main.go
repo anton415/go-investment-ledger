@@ -63,8 +63,16 @@ func main() {
 
 	missingParticipants, found := participantsMap[MeetingID("meetup-999")]
 	fmt.Printf("participants=%v, found=%t\n", missingParticipants, found)
+
+	fmt.Printf("before publish: %t\n", meeting.IsPublished)
+	meeting.publish()
+	fmt.Printf("after publish: %t\n", meeting.IsPublished)
 }
 
 func (m Meeting) buildMeetingSummary() (string, int) {
 	return string(m.ID) + ": " + m.Title, m.MaxParticipants - len(m.Participants)
+}
+
+func (m *Meeting) publish() {
+	m.IsPublished = true
 }
