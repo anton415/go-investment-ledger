@@ -3,149 +3,136 @@ package main
 import (
 	"errors"
 	"fmt"
-	"slices"
 )
 
-type MeetingID string
+type PortfolioID string
+type OperationID string
+type Ticker string
 
-type Meeting struct {
-	ID              MeetingID
-	Title           string
-	Participants    []string
-	MaxParticipants int
-	IsPublished     bool
+const demoPortfolioID PortfolioID = "portfolio-001"
+
+type Operation struct {
+	ID       OperationID
+	Ticker   Ticker
+	Quantity int
+}
+
+type Portfolio struct {
+	ID         PortfolioID
+	Name       string
+	Operations []Operation
 }
 
 var (
-	ErrMeetingFull             = errors.New("свободных мест нет")
-	ErrParticipantAlreadyAdded = errors.New("участник уже добавлен")
+	ErrInsufficientPosition  = errors.New("недостаточно инструментов в позиции")
+	ErrOperationAlreadyAdded = errors.New("операция уже добавлена")
 )
 
 func main() {
-	const maxParticipants = 3
-	meeting := createMeeting("meetup-001", "Go Basics", maxParticipants, []string{"Alice"})
+	portfolio := createPortfolio(demoPortfolioID, "Основной портфель", nil)
 
-	err := meeting.addParticipant("Bob")
-	switch err {
-	case nil:
-		fmt.Printf("%s - %s\n", "Bob", "добавлен")
-	case ErrMeetingFull:
-		fmt.Println("свободных мест нет")
-	case ErrParticipantAlreadyAdded:
-		fmt.Println("участник уже добавлен")
-	default:
-		fmt.Printf("Bob — неизвестная ошибка: %v\n", err)
+	operations := []Operation{
+		{ID: "operation-001", Ticker: "SBER", Quantity: 10},
+		{ID: "operation-002", Ticker: "YNDX", Quantity: 3},
+		{ID: "operation-003", Ticker: "SBER", Quantity: -4},
+		{ID: "operation-003", Ticker: "SBER", Quantity: -4},
+		{ID: "operation-004", Ticker: "YNDX", Quantity: -5},
 	}
 
-	err = meeting.addParticipant("Alice")
-	switch err {
-	case nil:
-		fmt.Printf("%s - %s\n", "Alice", "добавлен")
-	case ErrMeetingFull:
-		fmt.Println("свободных мест нет")
-	case ErrParticipantAlreadyAdded:
-		fmt.Printf("Alice — %v\n", err)
-	default:
-		fmt.Printf("Alice — неизвестная ошибка: %v\n", err)
-	}
-
-	err = meeting.addParticipant("Carol")
-	switch err {
-	case nil:
-		fmt.Printf("%s - %s\n", "Carol", "добавлен")
-	case ErrMeetingFull:
-		fmt.Println("свободных мест нет")
-	case ErrParticipantAlreadyAdded:
-		fmt.Println("участник уже добавлен")
-	default:
-		fmt.Printf("Carol — неизвестная ошибка: %v\n", err)
-	}
-
-	err = meeting.addParticipant("David")
-	switch err {
-	case nil:
-		fmt.Printf("%s - %s\n", "David", "добавлен")
-	case ErrMeetingFull:
-		fmt.Println("свободных мест нет")
-	case ErrParticipantAlreadyAdded:
-		fmt.Println("участник уже добавлен")
-	default:
-		fmt.Printf("David — неизвестная ошибка: %v\n", err)
-	}
-
-	fmt.Printf("before publish: %t\n", meeting.IsPublished)
-	meeting.publish()
-	fmt.Printf("after publish: %t\n", meeting.IsPublished)
-
-	meetingsMap := map[MeetingID]Meeting{meeting.ID: meeting}
-	meetingParticipants, ok := meetingsMap[meeting.ID]
-
-	if ok {
-		for index, participant := range meetingParticipants.Participants {
-			fmt.Printf("participant #%d %s\n", index+1, participant)
+	for _, operation := range operations {
+		err := portfolio.addOperation(operation)
+		switch err {
+		case nil:
+			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.Ticker)
+		case ErrInsufficientPosition:
+			fmt.Printf("%s — %v\n", operation.ID, err)
+		case ErrOperationAlreadyAdded:
+			fmt.Printf("%s — %v\n", operation.ID, err)
+		default:
+			fmt.Printf("%s — неизвестная ошибка: %v\n", operation.ID, err)
 		}
-		fmt.Printf("participants=%v, found=%t\n", meetingParticipants, ok)
 	}
 
-	savedParticipants, found := meetingsMap[MeetingID("meetup-001")]
-	fmt.Printf("participants=%v, found=%t\n", savedParticipants, found)
+	positions := portfolio.buildPositions()
+	for _, ticker := range []Ticker{"SBER", "YNDX", "MOEX"} {
+		quantity, found := positions[ticker]
+		fmt.Printf("position=%s, quantity=%d, found=%t\n", ticker, quantity, found)
+	}
 
-	missingParticipants, found := meetingsMap[MeetingID("meetup-999")]
-	fmt.Printf("participants=%v, found=%t\n", missingParticipants, found)
+	portfolios := map[PortfolioID]Portfolio{portfolio.ID: portfolio}
+	savedPortfolio, found := portfolios[demoPortfolioID]
+	fmt.Printf("portfolio=%q, found=%t\n", savedPortfolio.Name, found)
 
-	rawID := string(meeting.ID)
+	missingPortfolio, found := portfolios[PortfolioID("portfolio-999")]
+	fmt.Printf("portfolio=%q, found=%t\n", missingPortfolio.Name, found)
+
+	rawID := string(portfolio.ID)
 	fmt.Println(rawID)
 
-	summary, freeSlots := meeting.buildMeetingSummary()
-	fmt.Printf("summary=%q, freeSlots=%d\n", summary, freeSlots)
+	summary, positionCount := portfolio.buildPortfolioSummary()
+	fmt.Printf("summary=%q, positions=%d\n", summary, positionCount)
 
-	if freeSlots > 0 {
-		fmt.Println("registration is open")
+	if positionCount > 0 {
+		fmt.Println("portfolio has open positions")
 	} else {
-		fmt.Println("meeting is full")
+		fmt.Println("portfolio is empty")
 	}
 
-	var availability string
+	var diversification string
 	switch {
-	case freeSlots <= 0:
-		availability = "full"
-	case freeSlots <= meeting.MaxParticipants/2:
-		availability = "almost full"
+	case positionCount == 0:
+		diversification = "empty"
+	case positionCount == 1:
+		diversification = "single instrument"
 	default:
-		availability = "available"
+		diversification = "multiple instruments"
 	}
-	fmt.Println(availability)
+	fmt.Println(diversification)
 }
 
-func (m Meeting) buildMeetingSummary() (string, int) {
-	return string(m.ID) + ": " + m.Title, m.MaxParticipants - len(m.Participants)
+func (p Portfolio) buildPortfolioSummary() (string, int) {
+	return string(p.ID) + ": " + p.Name, len(p.buildPositions())
 }
 
-func (m *Meeting) publish() {
-	m.IsPublished = true
-}
-
-func contains(slice []string, item string) bool {
-	return slices.Contains(slice, item)
-}
-
-func (m *Meeting) addParticipant(participant string) error {
-	if len(m.Participants) >= m.MaxParticipants {
-		return ErrMeetingFull
+func (p Portfolio) buildPositions() map[Ticker]int {
+	positions := make(map[Ticker]int)
+	for _, operation := range p.Operations {
+		positions[operation.Ticker] += operation.Quantity
+		if positions[operation.Ticker] == 0 {
+			delete(positions, operation.Ticker)
+		}
 	}
-	if contains(m.Participants, participant) {
-		return ErrParticipantAlreadyAdded
+	return positions
+}
+
+func (p Portfolio) position(ticker Ticker) int {
+	return p.buildPositions()[ticker]
+}
+
+func containsOperation(operations []Operation, id OperationID) bool {
+	for _, operation := range operations {
+		if operation.ID == id {
+			return true
+		}
 	}
-	m.Participants = append(m.Participants, participant)
+	return false
+}
+
+func (p *Portfolio) addOperation(operation Operation) error {
+	if containsOperation(p.Operations, operation.ID) {
+		return ErrOperationAlreadyAdded
+	}
+	if p.position(operation.Ticker)+operation.Quantity < 0 {
+		return ErrInsufficientPosition
+	}
+	p.Operations = append(p.Operations, operation)
 	return nil
 }
 
-func createMeeting(id MeetingID, title string, maxParticipants int, participants []string) Meeting {
-	return Meeting{
-		ID:              id,
-		Title:           title,
-		Participants:    participants,
-		MaxParticipants: maxParticipants,
-		IsPublished:     false,
+func createPortfolio(id PortfolioID, name string, operations []Operation) Portfolio {
+	return Portfolio{
+		ID:         id,
+		Name:       name,
+		Operations: operations,
 	}
 }
