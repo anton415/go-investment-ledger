@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 )
@@ -15,33 +16,61 @@ type Meeting struct {
 	IsPublished     bool
 }
 
+var (
+	ErrMeetingFull             = errors.New("свободных мест нет")
+	ErrParticipantAlreadyAdded = errors.New("участник уже добавлен")
+)
+
 func main() {
 	const maxParticipants = 3
 	meeting := createMeeting("meetup-001", "Go Basics", maxParticipants, []string{"Alice"})
 
 	err := meeting.addParticipant("Bob")
-	if err != nil {
-		fmt.Printf("%s %v\n", "Bob", err)
-	} else {
+	switch err {
+	case nil:
 		fmt.Printf("%s - %s\n", "Bob", "добавлен")
+	case ErrMeetingFull:
+		fmt.Println("свободных мест нет")
+	case ErrParticipantAlreadyAdded:
+		fmt.Println("участник уже добавлен")
+	default:
+		fmt.Printf("Bob — неизвестная ошибка: %v\n", err)
 	}
+
 	err = meeting.addParticipant("Alice")
-	if err != nil {
-		fmt.Printf("%s %v\n", "Alice", err)
-	} else {
+	switch err {
+	case nil:
 		fmt.Printf("%s - %s\n", "Alice", "добавлен")
+	case ErrMeetingFull:
+		fmt.Println("свободных мест нет")
+	case ErrParticipantAlreadyAdded:
+		fmt.Printf("Alice — %v\n", err)
+	default:
+		fmt.Printf("Alice — неизвестная ошибка: %v\n", err)
 	}
+
 	err = meeting.addParticipant("Carol")
-	if err != nil {
-		fmt.Printf("%s %v\n", "Carol", err)
-	} else {
+	switch err {
+	case nil:
 		fmt.Printf("%s - %s\n", "Carol", "добавлен")
+	case ErrMeetingFull:
+		fmt.Println("свободных мест нет")
+	case ErrParticipantAlreadyAdded:
+		fmt.Println("участник уже добавлен")
+	default:
+		fmt.Printf("Carol — неизвестная ошибка: %v\n", err)
 	}
+
 	err = meeting.addParticipant("David")
-	if err != nil {
-		fmt.Printf("%s %v\n", "David", err)
-	} else {
+	switch err {
+	case nil:
 		fmt.Printf("%s - %s\n", "David", "добавлен")
+	case ErrMeetingFull:
+		fmt.Println("свободных мест нет")
+	case ErrParticipantAlreadyAdded:
+		fmt.Println("участник уже добавлен")
+	default:
+		fmt.Printf("David — неизвестная ошибка: %v\n", err)
 	}
 
 	fmt.Printf("before publish: %t\n", meeting.IsPublished)
@@ -102,10 +131,10 @@ func contains(slice []string, item string) bool {
 
 func (m *Meeting) addParticipant(participant string) error {
 	if len(m.Participants) >= m.MaxParticipants {
-		return fmt.Errorf("свободных мест нет")
+		return ErrMeetingFull
 	}
 	if contains(m.Participants, participant) {
-		return fmt.Errorf("участник уже добавлен")
+		return ErrParticipantAlreadyAdded
 	}
 	m.Participants = append(m.Participants, participant)
 	return nil
