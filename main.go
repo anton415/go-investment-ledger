@@ -19,10 +19,30 @@ func main() {
 	const maxParticipants = 3
 	meeting := createMeeting("meetup-001", "Go Basics", maxParticipants, []string{"Alice"})
 
-	fmt.Printf("Attempt to add participant #%s %t\n", "Bob", meeting.addParticipant("Bob"))
-	fmt.Printf("Attempt to add participant #%s %t\n", "Alice", meeting.addParticipant("Alice"))
-	fmt.Printf("Attempt to add participant #%s %t\n", "Carol", meeting.addParticipant("Carol"))
-	fmt.Printf("Attempt to add participant #%s %t\n", "David", meeting.addParticipant("David"))
+	err := meeting.addParticipant("Bob")
+	if err != nil {
+		fmt.Printf("%s %v\n", "Bob", err)
+	} else {
+		fmt.Printf("%s - %s\n", "Bob", "добавлен")
+	}
+	err = meeting.addParticipant("Alice")
+	if err != nil {
+		fmt.Printf("%s %v\n", "Alice", err)
+	} else {
+		fmt.Printf("%s - %s\n", "Alice", "добавлен")
+	}
+	err = meeting.addParticipant("Carol")
+	if err != nil {
+		fmt.Printf("%s %v\n", "Carol", err)
+	} else {
+		fmt.Printf("%s - %s\n", "Carol", "добавлен")
+	}
+	err = meeting.addParticipant("David")
+	if err != nil {
+		fmt.Printf("%s %v\n", "David", err)
+	} else {
+		fmt.Printf("%s - %s\n", "David", "добавлен")
+	}
 
 	fmt.Printf("before publish: %t\n", meeting.IsPublished)
 	meeting.publish()
@@ -80,12 +100,15 @@ func contains(slice []string, item string) bool {
 	return slices.Contains(slice, item)
 }
 
-func (m *Meeting) addParticipant(participant string) bool {
-	if len(m.Participants) < m.MaxParticipants && !contains(m.Participants, participant) {
-		m.Participants = append(m.Participants, participant)
-		return true
+func (m *Meeting) addParticipant(participant string) error {
+	if len(m.Participants) >= m.MaxParticipants {
+		return fmt.Errorf("свободных мест нет")
 	}
-	return false
+	if contains(m.Participants, participant) {
+		return fmt.Errorf("участник уже добавлен")
+	}
+	m.Participants = append(m.Participants, participant)
+	return nil
 }
 
 func createMeeting(id MeetingID, title string, maxParticipants int, participants []string) Meeting {
