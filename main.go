@@ -12,8 +12,10 @@ type Ticker string
 const demoPortfolioID PortfolioID = "portfolio-001"
 
 type Operation struct {
-	ID       OperationID
-	Ticker   Ticker
+	ID     OperationID
+	Ticker Ticker
+	// Quantity задаёт изменение позиции: положительное значение увеличивает,
+	// отрицательное — уменьшает количество инструмента.
 	Quantity int
 }
 
@@ -24,7 +26,7 @@ type Portfolio struct {
 }
 
 var (
-	ErrInsufficientPosition  = errors.New("недостаточно инструментов в позиции")
+	ErrInsufficientPosition  = errors.New("недостаточное количество инструмента в позиции")
 	ErrOperationAlreadyAdded = errors.New("операция уже добавлена")
 )
 
@@ -94,6 +96,8 @@ func (p Portfolio) buildPortfolioSummary() (string, int) {
 	return string(p.ID) + ": " + p.Name, len(p.buildPositions())
 }
 
+// buildPositions пересчитывает открытые позиции из журнала операций,
+// который остаётся единственным источником истины.
 func (p Portfolio) buildPositions() map[Ticker]int {
 	positions := make(map[Ticker]int)
 	for _, operation := range p.Operations {
@@ -118,6 +122,8 @@ func containsOperation(operations []Operation, id OperationID) bool {
 	return false
 }
 
+// addOperation добавляет операцию, только если её ID уникален,
+// а итоговая позиция по инструменту не становится отрицательной.
 func (p *Portfolio) addOperation(operation Operation) error {
 	if containsOperation(p.Operations, operation.ID) {
 		return ErrOperationAlreadyAdded
