@@ -1,39 +1,22 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/anton415/go-investment-ledger/internal/ledger"
 )
 
-type PortfolioID string
-type OperationID string
-type Ticker string
-
-const demoPortfolioID PortfolioID = "portfolio-001"
-
-type Operation struct {
-	ID     OperationID
-	Ticker Ticker
-	// Quantity задаёт изменение позиции: положительное значение увеличивает,
-	// отрицательное — уменьшает количество инструмента.
-	Quantity int
+type operationRecorder interface {
+	AddOperation(ledger.Operation) error
 }
 
-type Portfolio struct {
-	ID         PortfolioID
-	Name       string
-	Operations []Operation
-}
-
-var (
-	ErrInsufficientPosition  = errors.New("недостаточное количество инструмента в позиции")
-	ErrOperationAlreadyAdded = errors.New("операция уже добавлена")
-)
+const demoPortfolioID ledger.PortfolioID = "portfolio-001"
 
 func main() {
-	portfolio := createPortfolio(demoPortfolioID, "Основной портфель", nil)
+	portfolio := ledger.NewPortfolio(demoPortfolioID, "Основной портфель", nil)
+	var recorder operationRecorder = &portfolio
 
-	operations := []Operation{
+	operations := []ledger.Operation{
 		{ID: "operation-001", Ticker: "SBER", Quantity: 10},
 		{ID: "operation-002", Ticker: "YNDX", Quantity: 3},
 		{ID: "operation-003", Ticker: "SBER", Quantity: -4},
@@ -42,36 +25,44 @@ func main() {
 	}
 
 	for _, operation := range operations {
-		err := portfolio.addOperation(operation)
+		err := recorder.AddOperation(operation)
 		switch err {
 		case nil:
 			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.Ticker)
-		case ErrInsufficientPosition:
+		case ledger.ErrInsufficientPosition:
 			fmt.Printf("%s — %v\n", operation.ID, err)
-		case ErrOperationAlreadyAdded:
+		case ledger.ErrOperationAlreadyAdded:
 			fmt.Printf("%s — %v\n", operation.ID, err)
 		default:
 			fmt.Printf("%s — неизвестная ошибка: %v\n", operation.ID, err)
 		}
 	}
 
-	positions := portfolio.buildPositions()
-	for _, ticker := range []Ticker{"SBER", "YNDX", "MOEX"} {
+	positions := portfolio.Positions()
+
+	findPosition := func(ticker ledger.Ticker) (int, bool) {
 		quantity, found := positions[ticker]
+		return quantity, found
+	}
+
+	trackedTickers := [...]ledger.Ticker{"SBER", "YNDX", "MOEX"}
+
+	for _, ticker := range trackedTickers {
+		quantity, found := findPosition(ticker)
 		fmt.Printf("position=%s, quantity=%d, found=%t\n", ticker, quantity, found)
 	}
 
-	portfolios := map[PortfolioID]Portfolio{portfolio.ID: portfolio}
+	portfolios := map[ledger.PortfolioID]ledger.Portfolio{portfolio.ID: portfolio}
 	savedPortfolio, found := portfolios[demoPortfolioID]
 	fmt.Printf("portfolio=%q, found=%t\n", savedPortfolio.Name, found)
 
-	missingPortfolio, found := portfolios[PortfolioID("portfolio-999")]
+	missingPortfolio, found := portfolios[ledger.PortfolioID("portfolio-999")]
 	fmt.Printf("portfolio=%q, found=%t\n", missingPortfolio.Name, found)
 
 	rawID := string(portfolio.ID)
 	fmt.Println(rawID)
 
-	summary, positionCount := portfolio.buildPortfolioSummary()
+	summary, positionCount := portfolio.Summary()
 	fmt.Printf("summary=%q, positions=%d\n", summary, positionCount)
 
 	if positionCount > 0 {
@@ -90,55 +81,14 @@ func main() {
 		diversification = "multiple instruments"
 	}
 	fmt.Println(diversification)
+
+	initial, hasInitial := firstRune(portfolio.Name)
+	fmt.Printf("portfolio_initial=%q, found=%t\n", initial, hasInitial)
 }
 
-func (p Portfolio) buildPortfolioSummary() (string, int) {
-	return string(p.ID) + ": " + p.Name, len(p.buildPositions())
-}
-
-// buildPositions пересчитывает открытые позиции из журнала операций,
-// который остаётся единственным источником истины.
-func (p Portfolio) buildPositions() map[Ticker]int {
-	positions := make(map[Ticker]int)
-	for _, operation := range p.Operations {
-		positions[operation.Ticker] += operation.Quantity
-		if positions[operation.Ticker] == 0 {
-			delete(positions, operation.Ticker)
-		}
+func firstRune(value string) (rune, bool) {
+	for _, symbol := range value {
+		return symbol, true
 	}
-	return positions
-}
-
-func (p Portfolio) position(ticker Ticker) int {
-	return p.buildPositions()[ticker]
-}
-
-func containsOperation(operations []Operation, id OperationID) bool {
-	for _, operation := range operations {
-		if operation.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-// addOperation добавляет операцию, только если её ID уникален,
-// а итоговая позиция по инструменту не становится отрицательной.
-func (p *Portfolio) addOperation(operation Operation) error {
-	if containsOperation(p.Operations, operation.ID) {
-		return ErrOperationAlreadyAdded
-	}
-	if p.position(operation.Ticker)+operation.Quantity < 0 {
-		return ErrInsufficientPosition
-	}
-	p.Operations = append(p.Operations, operation)
-	return nil
-}
-
-func createPortfolio(id PortfolioID, name string, operations []Operation) Portfolio {
-	return Portfolio{
-		ID:         id,
-		Name:       name,
-		Operations: operations,
-	}
+	return 0, false
 }
