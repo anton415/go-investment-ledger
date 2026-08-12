@@ -6,10 +6,15 @@ import (
 	"github.com/anton415/go-investment-ledger/internal/ledger"
 )
 
+type operationRecorder interface {
+	AddOperation(ledger.Operation) error
+}
+
 const demoPortfolioID ledger.PortfolioID = "portfolio-001"
 
 func main() {
 	portfolio := ledger.NewPortfolio(demoPortfolioID, "Основной портфель", nil)
+	var recorder operationRecorder = &portfolio
 
 	operations := []ledger.Operation{
 		{ID: "operation-001", Ticker: "SBER", Quantity: 10},
@@ -20,7 +25,7 @@ func main() {
 	}
 
 	for _, operation := range operations {
-		err := portfolio.AddOperation(operation)
+		err := recorder.AddOperation(operation)
 		switch err {
 		case nil:
 			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.Ticker)
@@ -34,10 +39,16 @@ func main() {
 	}
 
 	positions := portfolio.Positions()
+
+	findPosition := func(ticker ledger.Ticker) (int, bool) {
+		quantity, found := positions[ticker]
+		return quantity, found
+	}
+
 	trackedTickers := [...]ledger.Ticker{"SBER", "YNDX", "MOEX"}
 
 	for _, ticker := range trackedTickers {
-		quantity, found := positions[ticker]
+		quantity, found := findPosition(ticker)
 		fmt.Printf("position=%s, quantity=%d, found=%t\n", ticker, quantity, found)
 	}
 
