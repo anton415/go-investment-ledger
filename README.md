@@ -43,3 +43,7 @@ go run .
 ```
 
 Полный бездатный roadmap, контрольные работы и cloud architecture находятся в [LEARNING_PLAN.md](LEARNING_PLAN.md).
+
+Промежуточные результаты этапа S02:
+
+- [Product goal и границы Investment Ledger](docs/domain/product-goal.md).
