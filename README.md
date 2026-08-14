@@ -47,3 +47,4 @@ go run .
 Промежуточные результаты этапа S02:
 
 - [Product goal и границы Investment Ledger](docs/domain/product-goal.md).
+- [Process Map L0 — текстовый черновик](docs/processes/investment-ledger-l0.md).
