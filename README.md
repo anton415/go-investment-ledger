@@ -47,5 +47,6 @@ go run .
 Промежуточные результаты этапа S02:
 
 - [Product goal и границы Investment Ledger](docs/domain/product-goal.md).
+- [Жизненные циклы команды и Operation](docs/domain/operation-lifecycle.md).
 - [Process Map L0 — текстовый черновик](docs/processes/investment-ledger-l0.md).
 - [Record operation L1 — текстовый черновик](docs/processes/record-operation-l1.md).
