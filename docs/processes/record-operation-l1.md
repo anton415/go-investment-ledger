@@ -1,6 +1,8 @@
 # Record operation L1 — текстовый черновик
 
-> Статус: промежуточный учебный артефакт S02. Это documentation-only описание для последующего переноса в BPMN; оно не является исполняемой моделью и не требует Camunda Runtime.
+> Статус: промежуточный учебный артефакт S02. Это documentation-only описание; оно не является исполняемой моделью и не требует Camunda Runtime.
+
+Схема сохранена как [BPMN 2.0 source](record-operation-l1.bpmn) и [читаемый SVG](record-operation-l1.svg). Оба файла остаются documentation-only и не являются конфигурацией runtime.
 
 ## Граница процесса
 

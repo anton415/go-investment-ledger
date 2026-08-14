@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2080" height="650" viewBox="0 0 2080 650" role="img" aria-labelledby="title description">
+  <title id="title">Record operation L1</title>
+  <desc id="description">Documentation-only BPMN view of validation, idempotency, financial invariants, append, business rejection and technical failure.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155" />
+    </marker>
+    <marker id="arrow-technical" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b42318" />
+    </marker>
+    <style>
+      .title { font: 700 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; }
+      .subtitle { font: 400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #667085; }
+      .label { font: 500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; text-anchor: middle; }
+      .small { font: 500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475467; text-anchor: middle; }
+      .flow-label { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #344054; }
+      .task { fill: #ffffff; stroke: #334155; stroke-width: 2; rx: 10; }
+      .task-success { fill: #f0fdf4; stroke: #15803d; stroke-width: 2; rx: 10; }
+      .task-technical { fill: #fff5f3; stroke: #b42318; stroke-width: 2; rx: 10; }
+      .gateway { fill: #ffffff; stroke: #334155; stroke-width: 2; }
+      .event { fill: #ffffff; stroke: #334155; stroke-width: 2; }
+      .end { fill: #ffffff; stroke: #334155; stroke-width: 4; }
+      .end-success { fill: #f0fdf4; stroke: #15803d; stroke-width: 4; }
+      .end-rejection { fill: #fffaeb; stroke: #b54708; stroke-width: 4; }
+      .end-technical { fill: #fff5f3; stroke: #b42318; stroke-width: 4; }
+      .flow { fill: none; stroke: #334155; stroke-width: 2; marker-end: url(#arrow); }
+      .technical-flow { fill: none; stroke: #b42318; stroke-width: 2; marker-end: url(#arrow-technical); }
+      .boundary-outer { fill: #fff5f3; stroke: #b42318; stroke-width: 2; }
+      .boundary-inner { fill: none; stroke: #b42318; stroke-width: 1.5; }
+      .technical-text { fill: #b42318; }
+    </style>
+  </defs>
+
+  <rect width="2080" height="650" fill="#f8fafc" />
+  <text x="40" y="32" class="title">Record operation L1</text>
+  <text x="40" y="53" class="subtitle">Documentation-only: validation → idempotency → invariants → atomic append; no Camunda Runtime</text>
+
+  <!-- Sequence flows -->
+  <path class="flow" d="M81 238 H110" />
+  <path class="flow" d="M280 238 H330" />
+  <path class="flow" d="M380 238 H430" />
+  <path class="flow" d="M355 263 V370" />
+  <path class="flow" d="M620 238 H670" />
+  <path class="flow" d="M730 238 H800" />
+  <path class="flow" d="M700 208 V95 H800" />
+  <path class="flow" d="M700 268 V370" />
+  <path class="flow" d="M990 95 H1040" />
+  <path class="flow" d="M980 238 H1030" />
+  <path class="flow" d="M1220 238 H1270" />
+  <path class="flow" d="M1330 238 H1380" />
+  <path class="flow" d="M1300 268 V370" />
+  <path class="flow" d="M1580 238 H1630" />
+  <path class="flow" d="M1800 238 H1850" />
+
+  <!-- Technical failure flows -->
+  <path class="technical-flow" d="M585 293 V460 H1550 V500 H1580" />
+  <path class="technical-flow" d="M945 293 V480 H1580 L1610 470" />
+  <path class="technical-flow" d="M1545 293 V410 H1610 V470" />
+  <path class="technical-flow" d="M1640 500 H1690" />
+  <path class="technical-flow" d="M1890 500 H1940" />
+
+  <!-- Start -->
+  <circle class="event" cx="63" cy="238" r="18" />
+  <text x="63" y="282" class="small"><tspan x="63">Command</tspan><tspan x="63" dy="15">received</tspan></text>
+
+  <!-- Validation -->
+  <rect class="task" x="110" y="198" width="170" height="80" />
+  <text x="195" y="230" class="label"><tspan x="195">Validate required</tspan><tspan x="195" dy="18">fields and values</tspan></text>
+
+  <path class="gateway" d="M355 213 L380 238 L355 263 L330 238 Z" />
+  <path d="M346 229 L364 247 M364 229 L346 247" stroke="#334155" stroke-width="2" />
+  <text x="355" y="185" class="small">Data valid?</text>
+  <text x="397" y="222" class="flow-label">Yes</text>
+  <text x="364" y="314" class="flow-label">No</text>
+
+  <circle class="end-rejection" cx="355" cy="388" r="17" />
+  <text x="355" y="430" class="small"><tspan x="355">Validation</tspan><tspan x="355" dy="15">rejection</tspan></text>
+
+  <!-- Idempotency -->
+  <rect class="task" x="430" y="198" width="190" height="80" />
+  <text x="525" y="221" class="label"><tspan x="525">Check request ID</tspan><tspan x="525" dy="18">and payload</tspan><tspan x="525" dy="18">in storage</tspan></text>
+
+  <circle class="boundary-outer" cx="585" cy="278" r="15" />
+  <circle class="boundary-inner" cx="585" cy="278" r="11" />
+  <path d="M581 269 L589 269 L585 276 L591 276 L579 288 L583 279 L577 279 Z" fill="#b42318" />
+
+  <path class="gateway" d="M700 208 L730 238 L700 268 L670 238 Z" />
+  <path d="M689 227 L711 249 M711 227 L689 249" stroke="#334155" stroke-width="2" />
+  <text x="700" y="293" class="small">Identifier state?</text>
+  <text x="751" y="222" class="flow-label">New</text>
+  <text x="705" y="84" class="flow-label">Same payload</text>
+  <text x="711" y="322" class="flow-label">Different payload</text>
+
+  <rect class="task-success" x="800" y="55" width="190" height="80" />
+  <text x="895" y="87" class="label"><tspan x="895">Return saved</tspan><tspan x="895" dy="18">successful result</tspan></text>
+  <circle class="end-success" cx="1058" cy="95" r="17" />
+  <text x="1058" y="137" class="small"><tspan x="1058">Saved result</tspan><tspan x="1058" dy="15">returned</tspan></text>
+
+  <circle class="end-rejection" cx="700" cy="388" r="17" />
+  <text x="700" y="430" class="small"><tspan x="700">Conflict</tspan><tspan x="700" dy="15">journal unchanged</tspan></text>
+
+  <!-- State and invariants -->
+  <rect class="task" x="800" y="198" width="180" height="80" />
+  <text x="890" y="221" class="label"><tspan x="890">Load operations</tspan><tspan x="890" dy="18">and calculate</tspan><tspan x="890" dy="18">current state</tspan></text>
+
+  <circle class="boundary-outer" cx="945" cy="278" r="15" />
+  <circle class="boundary-inner" cx="945" cy="278" r="11" />
+  <path d="M941 269 L949 269 L945 276 L951 276 L939 288 L943 279 L937 279 Z" fill="#b42318" />
+
+  <rect class="task" x="1030" y="198" width="190" height="80" />
+  <text x="1125" y="230" class="label"><tspan x="1125">Check cash and</tspan><tspan x="1125" dy="18">position invariants</tspan></text>
+
+  <path class="gateway" d="M1300 208 L1330 238 L1300 268 L1270 238 Z" />
+  <path d="M1289 227 L1311 249 M1311 227 L1289 249" stroke="#334155" stroke-width="2" />
+  <text x="1300" y="185" class="small">Invariants satisfied?</text>
+  <text x="1347" y="222" class="flow-label">Yes</text>
+  <text x="1309" y="322" class="flow-label">No</text>
+
+  <circle class="end-rejection" cx="1300" cy="388" r="17" />
+  <text x="1300" y="430" class="small"><tspan x="1300">Business rejection</tspan><tspan x="1300" dy="15">journal unchanged</tspan></text>
+
+  <!-- Append and success -->
+  <rect class="task" x="1380" y="198" width="200" height="80" />
+  <text x="1480" y="221" class="label"><tspan x="1480">Atomically append</tspan><tspan x="1480" dy="18">operations and</tspan><tspan x="1480" dy="18">save result</tspan></text>
+
+  <circle class="boundary-outer" cx="1545" cy="278" r="15" />
+  <circle class="boundary-inner" cx="1545" cy="278" r="11" />
+  <path d="M1541 269 L1549 269 L1545 276 L1551 276 L1539 288 L1543 279 L1537 279 Z" fill="#b42318" />
+
+  <rect class="task-success" x="1630" y="198" width="170" height="80" />
+  <text x="1715" y="230" class="label"><tspan x="1715">Return successful</tspan><tspan x="1715" dy="18">result</tspan></text>
+  <circle class="end-success" cx="1868" cy="238" r="17" />
+  <text x="1868" y="280" class="small"><tspan x="1868">Operation</tspan><tspan x="1868" dy="15">accepted</tspan></text>
+
+  <!-- Technical failure -->
+  <path class="gateway" d="M1610 470 L1640 500 L1610 530 L1580 500 Z" />
+  <path d="M1599 489 L1621 511 M1621 489 L1599 511" stroke="#b42318" stroke-width="2" />
+  <text x="1610" y="554" class="small technical-text">Technical failure</text>
+
+  <rect class="task-technical" x="1690" y="460" width="200" height="80" />
+  <text x="1790" y="484" class="label technical-text"><tspan x="1790">Return technical failure</tspan><tspan x="1790" dy="18">allow retry with</tspan><tspan x="1790" dy="18">the same ID</tspan></text>
+  <circle class="end-technical" cx="1958" cy="500" r="17" />
+  <text x="1958" y="542" class="small technical-text"><tspan x="1958">Technical</tspan><tspan x="1958" dy="15">failure</tspan></text>
+
+  <!-- Legend -->
+  <g transform="translate(45 590)">
+    <circle class="event" cx="12" cy="12" r="10" />
+    <text x="30" y="17" class="subtitle">Start event</text>
+    <rect class="task" x="135" y="2" width="44" height="22" />
+    <text x="190" y="17" class="subtitle">Task</text>
+    <path class="gateway" d="M285 2 L296 13 L285 24 L274 13 Z" />
+    <text x="310" y="17" class="subtitle">Exclusive gateway</text>
+    <circle class="boundary-outer" cx="480" cy="13" r="11" />
+    <circle class="boundary-inner" cx="480" cy="13" r="8" />
+    <path d="M477 7 L483 7 L480 12 L485 12 L476 20 L479 14 L474 14 Z" fill="#b42318" />
+    <text x="500" y="17" class="subtitle">Boundary error event</text>
+    <text x="710" y="17" class="subtitle">Red paths: technical failure; retry uses the same identifier</text>
+  </g>
+</svg>

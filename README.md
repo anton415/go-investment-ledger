@@ -50,3 +50,4 @@ go run .
 - [Жизненные циклы команды и Operation](docs/domain/operation-lifecycle.md).
 - [Process Map L0 — текстовый черновик](docs/processes/investment-ledger-l0.md).
 - [Record operation L1 — текстовый черновик](docs/processes/record-operation-l1.md).
+- [Record operation L1 — SVG-схема](docs/processes/record-operation-l1.svg).
