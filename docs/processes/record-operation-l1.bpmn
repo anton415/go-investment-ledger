@@ -20,22 +20,22 @@
       <bpmn:outgoing>Flow_Start_Validate</bpmn:outgoing>
     </bpmn:startEvent>
 
-    <bpmn:task id="Task_Validate" name="Validate required fields and values">
+    <bpmn:task id="Task_Validate" name="Validate request envelope and idempotency key">
       <bpmn:incoming>Flow_Start_Validate</bpmn:incoming>
       <bpmn:outgoing>Flow_Validate_Result</bpmn:outgoing>
     </bpmn:task>
 
-    <bpmn:exclusiveGateway id="Gateway_Validation" name="Data valid?" gatewayDirection="Diverging">
+    <bpmn:exclusiveGateway id="Gateway_Validation" name="Request envelope valid?" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_Validate_Result</bpmn:incoming>
       <bpmn:outgoing>Flow_Validation_Valid</bpmn:outgoing>
       <bpmn:outgoing>Flow_Validation_Invalid</bpmn:outgoing>
     </bpmn:exclusiveGateway>
 
-    <bpmn:endEvent id="EndEvent_ValidationRejected" name="Validation rejection">
+    <bpmn:endEvent id="EndEvent_ValidationRejected" name="Request rejected before command registration">
       <bpmn:incoming>Flow_Validation_Invalid</bpmn:incoming>
     </bpmn:endEvent>
 
-    <bpmn:task id="Task_CheckIdempotency" name="Check request identifier and payload">
+    <bpmn:task id="Task_CheckIdempotency" name="Check or reserve idempotency key and payload fingerprint">
       <bpmn:incoming>Flow_Validation_Valid</bpmn:incoming>
       <bpmn:outgoing>Flow_Idempotency_Result</bpmn:outgoing>
     </bpmn:task>
@@ -49,14 +49,14 @@
       <bpmn:errorEventDefinition id="ErrorEventDefinition_Idempotency" errorRef="Error_TechnicalFailure" />
     </bpmn:boundaryEvent>
 
-    <bpmn:exclusiveGateway id="Gateway_IdentityState" name="Identifier state?" gatewayDirection="Diverging">
+    <bpmn:exclusiveGateway id="Gateway_IdentityState" name="Idempotency state?" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_Idempotency_Result</bpmn:incoming>
       <bpmn:outgoing>Flow_Identity_New</bpmn:outgoing>
       <bpmn:outgoing>Flow_Identity_SamePayload</bpmn:outgoing>
       <bpmn:outgoing>Flow_Identity_DifferentPayload</bpmn:outgoing>
     </bpmn:exclusiveGateway>
 
-    <bpmn:task id="Task_ReturnSavedResult" name="Return saved successful result">
+    <bpmn:task id="Task_ReturnSavedResult" name="Return saved terminal result">
       <bpmn:incoming>Flow_Identity_SamePayload</bpmn:incoming>
       <bpmn:outgoing>Flow_SavedResult_End</bpmn:outgoing>
     </bpmn:task>
@@ -83,18 +83,18 @@
       <bpmn:errorEventDefinition id="ErrorEventDefinition_LoadState" errorRef="Error_TechnicalFailure" />
     </bpmn:boundaryEvent>
 
-    <bpmn:task id="Task_CheckInvariants" name="Check cash and position invariants">
+    <bpmn:task id="Task_CheckInvariants" name="Validate domain values, cash and position invariants">
       <bpmn:incoming>Flow_State_CheckRules</bpmn:incoming>
       <bpmn:outgoing>Flow_Rules_Result</bpmn:outgoing>
     </bpmn:task>
 
-    <bpmn:exclusiveGateway id="Gateway_Invariants" name="Invariants satisfied?" gatewayDirection="Diverging">
+    <bpmn:exclusiveGateway id="Gateway_Invariants" name="Command acceptable?" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_Rules_Result</bpmn:incoming>
       <bpmn:outgoing>Flow_Invariants_Satisfied</bpmn:outgoing>
       <bpmn:outgoing>Flow_Invariants_Rejected</bpmn:outgoing>
     </bpmn:exclusiveGateway>
 
-    <bpmn:endEvent id="EndEvent_BusinessRejected" name="Business rejection — journal unchanged">
+    <bpmn:endEvent id="EndEvent_BusinessRejected" name="Business rejection saved — journal unchanged">
       <bpmn:incoming>Flow_Invariants_Rejected</bpmn:incoming>
     </bpmn:endEvent>
 
@@ -128,7 +128,7 @@
       <bpmn:outgoing>Flow_Technical_Return</bpmn:outgoing>
     </bpmn:exclusiveGateway>
 
-    <bpmn:task id="Task_ReturnTechnicalFailure" name="Return technical failure; allow retry with same ID">
+    <bpmn:task id="Task_ReturnTechnicalFailure" name="Return technical failure; allow retry with same idempotency key">
       <bpmn:incoming>Flow_Technical_Return</bpmn:incoming>
       <bpmn:outgoing>Flow_Technical_End</bpmn:outgoing>
     </bpmn:task>
@@ -146,11 +146,11 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">validationResult = "invalid"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Idempotency_Result" sourceRef="Task_CheckIdempotency" targetRef="Gateway_IdentityState" />
-    <bpmn:sequenceFlow id="Flow_Identity_New" name="New" sourceRef="Gateway_IdentityState" targetRef="Task_LoadState">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">identityState = "new"</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_Identity_New" name="New or incomplete" sourceRef="Gateway_IdentityState" targetRef="Task_LoadState">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">identityState = "new" or identityState = "same-payload-without-result"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Identity_SamePayload" name="Same payload" sourceRef="Gateway_IdentityState" targetRef="Task_ReturnSavedResult">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">identityState = "same-payload"</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_Identity_SamePayload" name="Terminal result" sourceRef="Gateway_IdentityState" targetRef="Task_ReturnSavedResult">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">identityState = "same-payload-with-result"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Identity_DifferentPayload" name="Different payload" sourceRef="Gateway_IdentityState" targetRef="EndEvent_Conflict">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">identityState = "different-payload"</bpmn:conditionExpression>

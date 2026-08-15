@@ -47,7 +47,10 @@ go run .
 Промежуточные результаты этапа S02:
 
 - [Product goal и границы Investment Ledger](docs/domain/product-goal.md).
+- [Ubiquitous language и границы контекстов](docs/domain/glossary.md).
 - [Жизненные циклы команды и Operation](docs/domain/operation-lifecycle.md).
-- [Process Map L0 — текстовый черновик](docs/processes/investment-ledger-l0.md).
-- [Record operation L1 — текстовый черновик](docs/processes/record-operation-l1.md).
+- [Бизнес-правила, события и негативные сценарии](docs/domain/rules-events-and-scenarios.md).
+- [ADR-0001: результаты команды, повторы и компенсация](docs/adr/0001-command-outcomes-and-idempotency.md).
+- [Process Map L0 — текстовая карта](docs/processes/investment-ledger-l0.md).
+- [Record operation L1 — текстовое описание](docs/processes/record-operation-l1.md).
 - [Record operation L1 — SVG-схема](docs/processes/record-operation-l1.svg).
