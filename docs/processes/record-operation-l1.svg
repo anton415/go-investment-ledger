@@ -88,7 +88,7 @@
   <path class="gateway" d="M700 208 L730 238 L700 268 L670 238 Z" />
   <path d="M689 227 L711 249 M711 227 L689 249" stroke="#334155" stroke-width="2" />
   <text x="700" y="293" class="small">Idempotency state?</text>
-  <text x="741" y="222" class="flow-label">New / incomplete</text>
+  <text x="741" y="222" class="flow-label">Continue</text>
   <text x="705" y="84" class="flow-label">Terminal result</text>
   <text x="711" y="322" class="flow-label">Different payload</text>
 
