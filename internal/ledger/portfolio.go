@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 )
 
@@ -23,6 +24,19 @@ type Portfolio struct {
 	operations []Operation
 }
 
+type ValidationError struct {
+	Field  string
+	Reason string
+}
+
+func (e ValidationError) Error() string {
+	return fmt.Sprintf(
+		"field %q, reason %q",
+		e.Field,
+		e.Reason,
+	)
+}
+
 var (
 	ErrInsufficientPosition  = errors.New("недостаточное количество инструмента в позиции")
 	ErrOperationAlreadyAdded = errors.New("операция уже добавлена")
@@ -39,12 +53,36 @@ func NewPortfolio(id PortfolioID, name string, operations []Operation) Portfolio
 // AddOperation добавляет операцию, только если её ID уникален,
 // а итоговая позиция по инструменту не становится отрицательной.
 func (p *Portfolio) AddOperation(operation Operation) error {
+	if operation.Quantity == 0 {
+		return fmt.Errorf(
+			"add operation %q to portfolio %q: %w",
+			operation.ID,
+			p.ID,
+			&ValidationError{
+				Field:  "quantity",
+				Reason: "must not be zero",
+			},
+		)
+	}
+
 	if containsOperation(p.operations, operation.ID) {
-		return ErrOperationAlreadyAdded
+		return fmt.Errorf(
+			"add operation %q to portfolio %q: %w",
+			operation.ID,
+			p.ID,
+			ErrOperationAlreadyAdded,
+		)
 	}
+
 	if p.position(operation.Ticker)+operation.Quantity < 0 {
-		return ErrInsufficientPosition
+		return fmt.Errorf(
+			"add operation %q to portfolio %q: %w",
+			operation.ID,
+			p.ID,
+			ErrInsufficientPosition,
+		)
 	}
+
 	p.operations = append(p.operations, operation)
 	return nil
 }

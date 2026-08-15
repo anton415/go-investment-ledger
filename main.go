@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/anton415/go-investment-ledger/internal/ledger"
@@ -26,12 +27,12 @@ func main() {
 
 	for _, operation := range operations {
 		err := recorder.AddOperation(operation)
-		switch err {
-		case nil:
+		switch {
+		case err == nil:
 			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.Ticker)
-		case ledger.ErrInsufficientPosition:
+		case errors.Is(err, ledger.ErrInsufficientPosition):
 			fmt.Printf("%s — %v\n", operation.ID, err)
-		case ledger.ErrOperationAlreadyAdded:
+		case errors.Is(err, ledger.ErrOperationAlreadyAdded):
 			fmt.Printf("%s — %v\n", operation.ID, err)
 		default:
 			fmt.Printf("%s — неизвестная ошибка: %v\n", operation.ID, err)
