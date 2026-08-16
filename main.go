@@ -14,7 +14,13 @@ type operationRecorder interface {
 const demoPortfolioID ledger.PortfolioID = "portfolio-001"
 
 func main() {
-	portfolio := ledger.NewPortfolio(demoPortfolioID, "Основной портфель", nil)
+	portfolio, err := ledger.NewPortfolio(demoPortfolioID, "Основной портфель")
+
+	if err != nil {
+		fmt.Printf("error creating portfolio: %v\n", err)
+		return
+	}
+
 	var recorder operationRecorder = &portfolio
 
 	operations := []ledger.Operation{

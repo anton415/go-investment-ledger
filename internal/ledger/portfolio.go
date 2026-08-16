@@ -29,6 +29,25 @@ type ValidationError struct {
 	Reason string
 }
 
+type HistoryIntegrityError struct {
+	Index       int
+	OperationID OperationID
+	Err         error
+}
+
+func (e *HistoryIntegrityError) Error() string {
+	return fmt.Sprintf(
+		"invalid history operation[%d] %q: %v",
+		e.Index,
+		e.OperationID,
+		e.Err,
+	)
+}
+
+func (e *HistoryIntegrityError) Unwrap() error {
+	return e.Err
+}
+
 func (e ValidationError) Error() string {
 	return fmt.Sprintf(
 		"field %q, reason %q",
@@ -42,17 +61,79 @@ var (
 	ErrOperationAlreadyAdded = errors.New("операция уже добавлена")
 )
 
-func NewPortfolio(id PortfolioID, name string, operations []Operation) Portfolio {
+func NewPortfolio(id PortfolioID, name string) (Portfolio, error) {
+	if id == "" {
+		return Portfolio{}, fmt.Errorf(
+			"create portfolio: %w",
+			&ValidationError{
+				Field:  "id",
+				Reason: "must not be empty",
+			},
+		)
+	}
 	return Portfolio{
 		ID:         id,
 		Name:       name,
-		operations: slices.Clone(operations),
+		operations: []Operation{},
+	}, nil
+}
+
+func RestorePortfolio(
+	id PortfolioID,
+	name string,
+	operations []Operation,
+) (Portfolio, error) {
+	p, err := NewPortfolio(id, name)
+	if err != nil {
+		return Portfolio{}, fmt.Errorf(
+			"restore portfolio: %w",
+			err,
+		)
 	}
+
+	for i, operation := range operations {
+		if err := p.AddOperation(operation); err != nil {
+			return Portfolio{}, fmt.Errorf(
+				"restore portfolio %q: %w",
+				id,
+				&HistoryIntegrityError{
+					Index:       i,
+					OperationID: operation.ID,
+					Err:         err,
+				},
+			)
+		}
+	}
+
+	return p, nil
 }
 
 // AddOperation добавляет операцию, только если её ID уникален,
 // а итоговая позиция по инструменту не становится отрицательной.
 func (p *Portfolio) AddOperation(operation Operation) error {
+	if operation.ID == "" {
+		return fmt.Errorf(
+			"add operation to portfolio %q: %w",
+			p.ID,
+			&ValidationError{
+				Field:  "id",
+				Reason: "must not be empty",
+			},
+		)
+	}
+
+	if operation.Ticker == "" {
+		return fmt.Errorf(
+			"add operation %q to portfolio %q: %w",
+			operation.ID,
+			p.ID,
+			&ValidationError{
+				Field:  "ticker",
+				Reason: "must not be empty",
+			},
+		)
+	}
+
 	if operation.Quantity == 0 {
 		return fmt.Errorf(
 			"add operation %q to portfolio %q: %w",

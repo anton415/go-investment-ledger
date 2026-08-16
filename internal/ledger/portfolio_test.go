@@ -7,7 +7,10 @@ import (
 )
 
 func TestOperationsReturnsCopy(t *testing.T) {
-	portfolio := NewPortfolio("portfolio-001", "Основной", nil)
+	portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+	if errPortfolio != nil {
+		t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+	}
 
 	err := portfolio.AddOperation(Operation{
 		ID:       "operation-001",
@@ -29,7 +32,7 @@ func TestOperationsReturnsCopy(t *testing.T) {
 	}
 }
 
-func TestNewPortfolioCopiesOperations(t *testing.T) {
+func TestRestorePortfolioCopiesOperations(t *testing.T) {
 	operations := []Operation{
 		{
 			ID:       "operation-001",
@@ -38,7 +41,15 @@ func TestNewPortfolioCopiesOperations(t *testing.T) {
 		},
 	}
 
-	portfolio := NewPortfolio("portfolio-001", "Основной", operations)
+	portfolio, err := RestorePortfolio(
+		"portfolio-001",
+		"Основной",
+		operations,
+	)
+	if err != nil {
+		t.Fatalf("RestorePortfolio() error = %v", err)
+	}
+
 	operations[0].Quantity = 999
 
 	got := portfolio.Operations()[0].Quantity
@@ -49,8 +60,66 @@ func TestNewPortfolioCopiesOperations(t *testing.T) {
 	}
 }
 
+func TestRestorePortfolioRejectsInvalidHistory(t *testing.T) {
+	operations := []Operation{
+		{
+			ID:       "operation-001",
+			Ticker:   "SBER",
+			Quantity: 10,
+		},
+		{
+			ID:       "operation-002",
+			Ticker:   "SBER",
+			Quantity: -15,
+		},
+	}
+
+	portfolio, err := RestorePortfolio(
+		"portfolio-001",
+		"Основной",
+		operations,
+	)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var historyErr *HistoryIntegrityError
+	if !errors.As(err, &historyErr) {
+		t.Fatalf("error = %v, want *HistoryIntegrityError", err)
+	}
+
+	if historyErr.Index != 1 {
+		t.Errorf("Index = %d, want 1", historyErr.Index)
+	}
+	if historyErr.OperationID != "operation-002" {
+		t.Errorf(
+			"OperationID = %q, want %q",
+			historyErr.OperationID,
+			"operation-002",
+		)
+	}
+
+	if !errors.Is(err, ErrInsufficientPosition) {
+		t.Errorf("error = %v, want ErrInsufficientPosition", err)
+	}
+
+	if portfolio.ID != "" {
+		t.Errorf("ID = %q, want empty", portfolio.ID)
+	}
+	if portfolio.Name != "" {
+		t.Errorf("Name = %q, want empty", portfolio.Name)
+	}
+	if got := len(portfolio.Operations()); got != 0 {
+		t.Errorf("len(Operations()) = %d, want 0", got)
+	}
+}
+
 func TestPositionsReturnsIndependentMap(t *testing.T) {
-	portfolio := NewPortfolio("portfolio-001", "Основной", nil)
+	portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+
+	if errPortfolio != nil {
+		t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+	}
 
 	err := portfolio.AddOperation(Operation{
 		ID:       "operation-001",
@@ -73,7 +142,11 @@ func TestPositionsReturnsIndependentMap(t *testing.T) {
 }
 
 func TestAddOperationRejectsOversell(t *testing.T) {
-	portfolio := NewPortfolio("portfolio-001", "Основной", nil)
+	portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+
+	if errPortfolio != nil {
+		t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+	}
 
 	err := portfolio.AddOperation(Operation{
 		ID:       "operation-001",
@@ -108,7 +181,11 @@ func TestAddOperationRejectsOversell(t *testing.T) {
 }
 
 func TestTryAddDuplicateOperation(t *testing.T) {
-	portfolio := NewPortfolio("portfolio-001", "Основной", nil)
+	portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+
+	if errPortfolio != nil {
+		t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+	}
 
 	err := portfolio.AddOperation(Operation{
 		ID:       "operation-001",
@@ -142,19 +219,103 @@ func TestTryAddDuplicateOperation(t *testing.T) {
 	}
 }
 
-func TestAddOperationRejectsZeroQuantity(t *testing.T) {
-	portfolio := NewPortfolio("portfolio-001", "Основной", nil)
+func TestAddOperationRejectsInvalidFields(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  Operation
+		wantField  string
+		wantReason string
+	}{
+		{
+			name: "empty ID",
+			operation: Operation{
+				Ticker:   "SBER",
+				Quantity: 10,
+			},
+			wantField:  "id",
+			wantReason: "must not be empty",
+		},
+		{
+			name: "empty ticker",
+			operation: Operation{
+				ID:       "operation-001",
+				Quantity: 10,
+			},
+			wantField:  "ticker",
+			wantReason: "must not be empty",
+		},
+		{
+			name: "zero quantity",
+			operation: Operation{
+				ID:     "operation-001",
+				Ticker: "SBER",
+			},
+			wantField:  "quantity",
+			wantReason: "must not be zero",
+		},
+	}
 
-	before := portfolio.Operations()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+
+			if errPortfolio != nil {
+				t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+			}
+			before := portfolio.Operations()
+
+			err := portfolio.AddOperation(tt.operation)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("error = %v, want *ValidationError", err)
+			}
+
+			if validationErr.Field != tt.wantField {
+				t.Errorf("Field = %q, want %q", validationErr.Field, tt.wantField)
+			}
+			if validationErr.Reason != tt.wantReason {
+				t.Errorf("Reason = %q, want %q", validationErr.Reason, tt.wantReason)
+			}
+
+			after := portfolio.Operations()
+			if !slices.Equal(before, after) {
+				t.Errorf("operations before = %v, after = %v", before, after)
+			}
+		})
+	}
+}
+
+func TestAddOperationValidatesFieldsBeforeState(t *testing.T) {
+	portfolio, errPortfolio := NewPortfolio("portfolio-001", "Основной")
+
+	if errPortfolio != nil {
+		t.Fatalf("NewPortfolio() error = %v", errPortfolio)
+	}
 
 	err := portfolio.AddOperation(Operation{
 		ID:       "operation-001",
 		Ticker:   "SBER",
-		Quantity: 0,
+		Quantity: 10,
+	})
+
+	if err != nil {
+		t.Fatalf("AddOperation() error = %v", err)
+	}
+
+	before := portfolio.Operations()
+
+	err = portfolio.AddOperation(Operation{
+		ID:       "operation-001",
+		Ticker:   "",
+		Quantity: 5,
 	})
 
 	if err == nil {
-		t.Errorf("expected error, got nil")
+		t.Fatal("expected error, got nil")
 	}
 
 	var validationErr *ValidationError
@@ -162,17 +323,49 @@ func TestAddOperationRejectsZeroQuantity(t *testing.T) {
 		t.Fatalf("error = %v, want *ValidationError", err)
 	}
 
-	if validationErr.Reason != "must not be zero" {
-		t.Errorf("error = %v, want 'must not be zero'", validationErr.Reason)
+	if validationErr.Field != "ticker" {
+		t.Errorf("Field = %q, want %q", validationErr.Field, "ticker")
+	}
+	if validationErr.Reason != "must not be empty" {
+		t.Errorf("Reason = %q, want %q", validationErr.Reason, "must not be empty")
 	}
 
-	if validationErr.Field != "quantity" {
-		t.Errorf("error = %v, want 'quantity'", validationErr.Field)
+	if errors.Is(err, ErrOperationAlreadyAdded) {
+		t.Fatalf("error = %v, must not match ErrOperationAlreadyAdded", err)
 	}
 
 	after := portfolio.Operations()
-
 	if !slices.Equal(before, after) {
-		t.Errorf("before %v, after %v", before, after)
+		t.Errorf("operations before = %v, after = %v", before, after)
+	}
+}
+
+func TestNewPortfolioRejectsEmptyID(t *testing.T) {
+	portfolio, err := NewPortfolio("", "Основной")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("error = %v, want *ValidationError", err)
+	}
+
+	if validationErr.Field != "id" {
+		t.Errorf("Field = %q, want %q", validationErr.Field, "id")
+	}
+	if validationErr.Reason != "must not be empty" {
+		t.Errorf("Reason = %q, want %q", validationErr.Reason, "must not be empty")
+	}
+
+	if portfolio.ID != "" {
+		t.Errorf("ID = %q, want empty", portfolio.ID)
+	}
+	if portfolio.Name != "" {
+		t.Errorf("Name = %q, want empty", portfolio.Name)
+	}
+	if got := len(portfolio.Operations()); got != 0 {
+		t.Errorf("len(Operations()) = %d, want 0", got)
 	}
 }
