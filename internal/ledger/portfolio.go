@@ -8,11 +8,10 @@ import (
 
 type PortfolioID string
 type OperationID string
-type Ticker string
 
 type Operation struct {
-	ID     OperationID
-	Ticker Ticker
+	ID           OperationID
+	InstrumentID InstrumentID
 	// Quantity задаёт изменение позиции: положительное значение увеличивает,
 	// отрицательное — уменьшает количество инструмента.
 	Quantity int
@@ -122,13 +121,13 @@ func (p *Portfolio) AddOperation(operation Operation) error {
 		)
 	}
 
-	if operation.Ticker == "" {
+	if operation.InstrumentID == "" {
 		return fmt.Errorf(
 			"add operation %q to portfolio %q: %w",
 			operation.ID,
 			p.ID,
 			&ValidationError{
-				Field:  "ticker",
+				Field:  "instrument_id",
 				Reason: "must not be empty",
 			},
 		)
@@ -155,7 +154,7 @@ func (p *Portfolio) AddOperation(operation Operation) error {
 		)
 	}
 
-	if p.position(operation.Ticker)+operation.Quantity < 0 {
+	if p.position(operation.InstrumentID)+operation.Quantity < 0 {
 		return fmt.Errorf(
 			"add operation %q to portfolio %q: %w",
 			operation.ID,
@@ -174,12 +173,12 @@ func (p Portfolio) Summary() (string, int) {
 
 // Positions пересчитывает открытые позиции из журнала операций,
 // который остаётся единственным источником истины.
-func (p Portfolio) Positions() map[Ticker]int {
-	positions := make(map[Ticker]int)
+func (p Portfolio) Positions() map[InstrumentID]int {
+	positions := make(map[InstrumentID]int)
 	for _, operation := range p.operations {
-		positions[operation.Ticker] += operation.Quantity
-		if positions[operation.Ticker] == 0 {
-			delete(positions, operation.Ticker)
+		positions[operation.InstrumentID] += operation.Quantity
+		if positions[operation.InstrumentID] == 0 {
+			delete(positions, operation.InstrumentID)
 		}
 	}
 	return positions
@@ -191,8 +190,8 @@ func (p Portfolio) Operations() []Operation {
 	return slices.Clone(p.operations)
 }
 
-func (p Portfolio) position(ticker Ticker) int {
-	return p.Positions()[ticker]
+func (p Portfolio) position(instrumentID InstrumentID) int {
+	return p.Positions()[instrumentID]
 }
 
 func containsOperation(operations []Operation, id OperationID) bool {

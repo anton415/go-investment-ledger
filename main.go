@@ -24,18 +24,18 @@ func main() {
 	var recorder operationRecorder = &portfolio
 
 	operations := []ledger.Operation{
-		{ID: "operation-001", Ticker: "SBER", Quantity: 10},
-		{ID: "operation-002", Ticker: "YNDX", Quantity: 3},
-		{ID: "operation-003", Ticker: "SBER", Quantity: -4},
-		{ID: "operation-003", Ticker: "SBER", Quantity: -4},
-		{ID: "operation-004", Ticker: "YNDX", Quantity: -5},
+		{ID: "operation-001", InstrumentID: "instrument-001", Quantity: 10},
+		{ID: "operation-002", InstrumentID: "instrument-002", Quantity: 3},
+		{ID: "operation-003", InstrumentID: "instrument-001", Quantity: -4},
+		{ID: "operation-003", InstrumentID: "instrument-001", Quantity: -4},
+		{ID: "operation-004", InstrumentID: "instrument-002", Quantity: -5},
 	}
 
 	for _, operation := range operations {
 		err := recorder.AddOperation(operation)
 		switch {
 		case err == nil:
-			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.Ticker)
+			fmt.Printf("%s: %+d %s — добавлена\n", operation.ID, operation.Quantity, operation.InstrumentID)
 		case errors.Is(err, ledger.ErrInsufficientPosition):
 			fmt.Printf("%s — %v\n", operation.ID, err)
 		case errors.Is(err, ledger.ErrOperationAlreadyAdded):
@@ -47,16 +47,20 @@ func main() {
 
 	positions := portfolio.Positions()
 
-	findPosition := func(ticker ledger.Ticker) (int, bool) {
-		quantity, found := positions[ticker]
+	findPosition := func(instrumentID ledger.InstrumentID) (int, bool) {
+		quantity, found := positions[instrumentID]
 		return quantity, found
 	}
 
-	trackedTickers := [...]ledger.Ticker{"SBER", "YNDX", "MOEX"}
+	trackedInstruments := [...]ledger.InstrumentID{
+		"instrument-001",
+		"instrument-002",
+		"instrument-999",
+	}
 
-	for _, ticker := range trackedTickers {
-		quantity, found := findPosition(ticker)
-		fmt.Printf("position=%s, quantity=%d, found=%t\n", ticker, quantity, found)
+	for _, instrumentID := range trackedInstruments {
+		quantity, found := findPosition(instrumentID)
+		fmt.Printf("position=%s, quantity=%d, found=%t\n", instrumentID, quantity, found)
 	}
 
 	portfolios := map[ledger.PortfolioID]ledger.Portfolio{portfolio.ID: portfolio}

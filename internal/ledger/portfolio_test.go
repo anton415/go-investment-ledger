@@ -13,9 +13,9 @@ func TestOperationsReturnsCopy(t *testing.T) {
 	}
 
 	err := portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 10,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     10,
 	})
 	if err != nil {
 		t.Fatalf("AddOperation() error = %v", err)
@@ -35,9 +35,9 @@ func TestOperationsReturnsCopy(t *testing.T) {
 func TestRestorePortfolioCopiesOperations(t *testing.T) {
 	operations := []Operation{
 		{
-			ID:       "operation-001",
-			Ticker:   "SBER",
-			Quantity: 10,
+			ID:           "operation-001",
+			InstrumentID: "instrument-001",
+			Quantity:     10,
 		},
 	}
 
@@ -63,14 +63,14 @@ func TestRestorePortfolioCopiesOperations(t *testing.T) {
 func TestRestorePortfolioRejectsInvalidHistory(t *testing.T) {
 	operations := []Operation{
 		{
-			ID:       "operation-001",
-			Ticker:   "SBER",
-			Quantity: 10,
+			ID:           "operation-001",
+			InstrumentID: "instrument-001",
+			Quantity:     10,
 		},
 		{
-			ID:       "operation-002",
-			Ticker:   "SBER",
-			Quantity: -15,
+			ID:           "operation-002",
+			InstrumentID: "instrument-001",
+			Quantity:     -15,
 		},
 	}
 
@@ -122,18 +122,18 @@ func TestPositionsReturnsIndependentMap(t *testing.T) {
 	}
 
 	err := portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 10,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     10,
 	})
 	if err != nil {
 		t.Fatalf("AddOperation() error = %v", err)
 	}
 
 	positions := portfolio.Positions()
-	positions["SBER"] = 999
+	positions["instrument-001"] = 999
 
-	got := portfolio.Positions()["SBER"]
+	got := portfolio.Positions()["instrument-001"]
 	const want = 10
 
 	if got != want {
@@ -149,9 +149,9 @@ func TestAddOperationRejectsOversell(t *testing.T) {
 	}
 
 	err := portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 10,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     10,
 	})
 	if err != nil {
 		t.Fatalf("AddOperation() error = %v", err)
@@ -160,9 +160,9 @@ func TestAddOperationRejectsOversell(t *testing.T) {
 	before := portfolio.Operations()
 
 	err = portfolio.AddOperation(Operation{
-		ID:       "operation-002",
-		Ticker:   "SBER",
-		Quantity: -15,
+		ID:           "operation-002",
+		InstrumentID: "instrument-001",
+		Quantity:     -15,
 	})
 
 	if err == nil {
@@ -188,9 +188,9 @@ func TestTryAddDuplicateOperation(t *testing.T) {
 	}
 
 	err := portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 10,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     10,
 	})
 	if err != nil {
 		t.Fatalf("AddOperation() error = %v", err)
@@ -199,9 +199,9 @@ func TestTryAddDuplicateOperation(t *testing.T) {
 	before := portfolio.Operations()
 
 	err = portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 5,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     5,
 	})
 
 	if err == nil {
@@ -229,26 +229,26 @@ func TestAddOperationRejectsInvalidFields(t *testing.T) {
 		{
 			name: "empty ID",
 			operation: Operation{
-				Ticker:   "SBER",
-				Quantity: 10,
+				InstrumentID: "instrument-001",
+				Quantity:     10,
 			},
 			wantField:  "id",
 			wantReason: "must not be empty",
 		},
 		{
-			name: "empty ticker",
+			name: "empty instrument ID",
 			operation: Operation{
 				ID:       "operation-001",
 				Quantity: 10,
 			},
-			wantField:  "ticker",
+			wantField:  "instrument_id",
 			wantReason: "must not be empty",
 		},
 		{
 			name: "zero quantity",
 			operation: Operation{
-				ID:     "operation-001",
-				Ticker: "SBER",
+				ID:           "operation-001",
+				InstrumentID: "instrument-001",
 			},
 			wantField:  "quantity",
 			wantReason: "must not be zero",
@@ -297,9 +297,9 @@ func TestAddOperationValidatesFieldsBeforeState(t *testing.T) {
 	}
 
 	err := portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "SBER",
-		Quantity: 10,
+		ID:           "operation-001",
+		InstrumentID: "instrument-001",
+		Quantity:     10,
 	})
 
 	if err != nil {
@@ -309,9 +309,9 @@ func TestAddOperationValidatesFieldsBeforeState(t *testing.T) {
 	before := portfolio.Operations()
 
 	err = portfolio.AddOperation(Operation{
-		ID:       "operation-001",
-		Ticker:   "",
-		Quantity: 5,
+		ID:           "operation-001",
+		InstrumentID: "",
+		Quantity:     5,
 	})
 
 	if err == nil {
@@ -323,8 +323,8 @@ func TestAddOperationValidatesFieldsBeforeState(t *testing.T) {
 		t.Fatalf("error = %v, want *ValidationError", err)
 	}
 
-	if validationErr.Field != "ticker" {
-		t.Errorf("Field = %q, want %q", validationErr.Field, "ticker")
+	if validationErr.Field != "instrument_id" {
+		t.Errorf("Field = %q, want %q", validationErr.Field, "instrument_id")
 	}
 	if validationErr.Reason != "must not be empty" {
 		t.Errorf("Reason = %q, want %q", validationErr.Reason, "must not be empty")
